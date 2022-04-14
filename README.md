@@ -1,4 +1,4 @@
-![img](https://github.com/madeiramadeirabr/action-check-status-sd-jira/blob/production/img/action-sync-package-version-with-tag.svg)
+![img](https://github.com/madeiramadeirabr/action-sync-package-version-with-tag/blob/production/img/action-sync-package-version-with-tag.svg)
 # action-sync-package-version-with-tag
 
 ## Description
