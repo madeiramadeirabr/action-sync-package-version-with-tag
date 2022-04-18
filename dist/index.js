@@ -11755,6 +11755,7 @@ const axios = __nccwpck_require__(992)
 const githubToken = core.getInput('github-token')
 const octokit = new Octokit({ auth: githubToken})
 const branch = core.getInput('branch')
+var path = core.getInput('path')
 
 async function run(){
     if(githubToken){
@@ -11812,12 +11813,16 @@ function validateTag(tag){
 
 
 async function setVersion(newVersion){
-    let content = await getContent()
-    let {sha} = content.data
-    let {download_url} = content.data
-    if (download_url){
-        let {data} = await getContentFile(download_url)
-        modifyVersionAndUploadFile(data, sha, newVersion)
+    try{
+        let content = await getContent()
+        let {sha} = content.data
+        let {download_url} = content.data
+        if (download_url){
+            let {data} = await getContentFile(download_url)
+            modifyVersionAndUploadFile(data, sha, newVersion)
+        }
+    }catch(error){
+        core.setFailed('Path invalido!')
     }
 }
 
@@ -11826,7 +11831,7 @@ function modifyVersionAndUploadFile(data, sha, newVersion){
         if(modifyVersion(data, newVersion) && modifyVersion(data, newVersion) != ''){
             let newFile = modifyVersion(data, newVersion)
             let fileBase64 = base64.encode(JSON.stringify(newFile))
-            uploadGithub(fileBase64, 'package.json', sha)
+            uploadGithub(fileBase64, path, sha)
         }else{
             core.setFailed('Falha ao atualizar a versão do package.json!')
         }
@@ -11836,10 +11841,21 @@ function modifyVersionAndUploadFile(data, sha, newVersion){
 }
 
 function getContent(){
+    if(path && path != ''){
+        if(path.split('/').pop() == ''){
+            path = path.slice(0, -1)
+            path += '/package.json' 
+        }else{
+            path = `${path}/package.json`
+        }
+    }else{
+        path = path != '' ? `${path}/package.json`: 'package.json'
+        path = `package.json`
+    }
     let param = {
         owner: github.context.payload.repository.owner.name,
         repo: github.context.payload.repository.name,
-        path: 'package.json',
+        path: path,
     }
     if (branch && branch != ''){
         param['ref'] = branch 
@@ -11854,12 +11870,15 @@ function getContent(){
 }
 
 async function getContentFile (raw_url){
-    
-    return axios.get(raw_url, {
-        headers: {
-            Authorization: `Bearer ${githubToken}`
-        }
-    })
+    try{
+        return axios.get(raw_url, {
+            headers: {
+                Authorization: `Bearer ${githubToken}`
+            }
+        })
+    }catch(error){
+        core.setFailed('Erro ao obter o conteúdo do arquivo!')
+    }
 }
 
 function modifyVersion (package_json_obj, newVersion){
@@ -11872,10 +11891,14 @@ function modifyVersion (package_json_obj, newVersion){
 }
 
 async function uploadGithub(content, fileName, sha){
+    if(path.substr(0, 1) == '/'){
+        path = path.substr(1)
+    }
+
     let param = {
         owner: github.context.payload.repository.owner.name,
         repo: github.context.payload.repository.name,
-        path: 'package.json',
+        path: path,
         message: `ci: Update ${fileName}`,
         content: content,
         sha: sha
@@ -11885,27 +11908,29 @@ async function uploadGithub(content, fileName, sha){
 }
 
 async function uploadFileBase64(param, fileName){
-    if (branch && branch != ''){
-        delete param.ref
-        param['branch'] = branch 
-    }
-    await octokit.request('PUT /repos/{owner}/{repo}/contents/{path}', param).then(()=>{
-        
-        let message = `Arquivo ${fileName} atualizado`
-        console.log({
-            'statusCode': 200,
-            'headers': {
-                'Content-Type': 'application/json',
-            },
-            'body': {
-                'message': message,
-            }
+    try{
+        if (branch && branch != ''){
+            delete param.ref
+            param['branch'] = branch 
+        }
+        await octokit.request('PUT /repos/{owner}/{repo}/contents/{path}', param).then(()=>{
+            
+            let message = `Arquivo ${fileName} atualizado`
+            console.log({
+                'statusCode': 200,
+                'headers': {
+                    'Content-Type': 'application/json',
+                },
+                'body': {
+                    'message': message,
+                }
+            })
+            core.setOutput("success", message)
+            
         })
-        core.setOutput("success", message)
-        
-    }).catch(function(error){
+    }catch(error){
         core.setFailed("Error ao commitar file: ",error)
-    })
+    }
 }
 run()
 })();

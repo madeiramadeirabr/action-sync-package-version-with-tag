@@ -4,6 +4,9 @@ inputs:
   github-token:
     description: 'GitHub token'
     required: true
+  path:
+    description: 'package.json path'
+    required: false
   branch:
     description: 'Branch where you want to modify package.json'
     required: false
