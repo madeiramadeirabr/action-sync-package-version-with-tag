@@ -2,16 +2,14 @@ apiVersion: backstage.io/v1alpha1
 kind: Component
 metadata:
   name: action-sync-package-version-with-tag
-  description: |
-    Github Action que busca a versão lançada de uma tag recentemente no repositório e verifica se ela atende a padrões determinados.
+  description: Github Action que busca a versão lançada de uma tag recente no repositório e verifica se ela atende a padrões determinados.
   annotations:
     github.com/project-slug: madeiramadeirabr/action-sync-package-version-with-tag
     sonarqube.org/project-key: madeiramadeirabr/action-sync-package-version-with-tag
-    backstage.io/techdocs-ref: dir:.
   tags:
   - javascript
   - github-action
 spec:
   type: library
   lifecycle: production
-  owner: team-platform-services
+  owner: team-platform-engineering-admin
